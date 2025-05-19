@@ -20,6 +20,9 @@ build/
 *.swo
 .DS_Store
 
+# Uploads
+uploads/
+
 # Logs
 logs/
 *.log
