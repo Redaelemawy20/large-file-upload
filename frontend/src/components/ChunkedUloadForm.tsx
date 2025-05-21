@@ -32,15 +32,12 @@ const ChunkedUploadForm = () => {
       sessionId = data.sessionId;
       chunkSize = data.chunkSize;
       let chunkIndex = 0;
-      // Here, implement chunk upload logic using sessionId and chunkSize
-      // This is just a placeholder to demonstrate using the variables
       if (sessionId && chunkSize) {
         for (let start = 0; start < file.size; start += chunkSize) {
           await uploadChunk(file, sessionId, start, chunkSize, chunkIndex);
           chunkIndex++;
+          setUploadProgress(Math.round((start * 100) / file.size));
         }
-
-        // Update progress for demo purposes
         setUploadProgress(100);
       }
 
