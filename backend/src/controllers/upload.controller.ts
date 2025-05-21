@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import {
   formatFileInfo,
   logFileUpload,
@@ -37,4 +38,26 @@ export const uploadFile = (req: Request, res: Response) => {
  */
 export const getUploadStatus = (_req: Request, res: Response) => {
   res.status(200).json(getUploadSystemStatus());
+};
+
+const uploadSessions = new Map();
+
+export const getSessionId = (req: Request, res: Response) => {
+  const { filename, filesize } = req.body;
+  if (!filename || !filesize) {
+    return res.status(400).json({ error: 'Missing filename or filesize' });
+  }
+  const sessionId = crypto.randomBytes(16).toString('hex');
+  uploadSessions.set(sessionId, {
+    filename,
+    filesize,
+    createdAt: Date.now(),
+    receivedChunks: [],
+  });
+  res.json({
+    filename,
+    filesize,
+    sessionId,
+    chunkSize: 1024 * 1024,
+  });
 };

@@ -2,7 +2,11 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { uploadFile, getUploadStatus } from '../controllers/upload.controller';
+import {
+  uploadFile,
+  getUploadStatus,
+  getSessionId,
+} from '../controllers/upload.controller';
 import { validateFileType } from '../middleware/validation.middleware';
 import {
   UPLOAD_DIR,
@@ -86,5 +90,7 @@ router.post(
 );
 
 router.get('/status', getUploadStatus);
+
+router.post('/start-upload', getSessionId);
 
 export default router;

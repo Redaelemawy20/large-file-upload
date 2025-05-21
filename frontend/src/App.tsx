@@ -1,5 +1,5 @@
 import SmallFileUploadForm from './components/SmallFileUploadForm';
-
+import ChunkedUploadForm from './components/ChunkedUloadForm';
 function App() {
   return (
     <div className="container min-h-screen flex items-center justify-center p-4">
@@ -7,7 +7,8 @@ function App() {
         <h1 className="text-3xl font-bold text-primary mb-6">
           Upload your files here
         </h1>
-        <SmallFileUploadForm />
+        {/* <SmallFileUploadForm /> */}
+        <ChunkedUploadForm />
       </div>
     </div>
   );
