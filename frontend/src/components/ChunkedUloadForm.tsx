@@ -40,7 +40,7 @@ const ChunkedUploadForm = () => {
         }
         setUploadProgress(100);
       }
-
+      await completeUpload(sessionId, file.name);
       setUploading(false);
     } catch (error) {
       console.error('Error during chunked upload:', error);
@@ -83,7 +83,21 @@ const ChunkedUploadForm = () => {
       throw error; // Optional: Let the caller handle retries or errors
     }
   };
-
+  const completeUpload = async (sessionId: string, filename: string) => {
+    const response = await fetch(
+      'http://localhost:3000/api/upload/complete-upload',
+      {
+        method: 'POST',
+        body: JSON.stringify({ sessionId, filename }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    const data = await response.json();
+    console.log('Upload complete:', data);
+    return data;
+  };
   return (
     <Form
       uploading={uploading}

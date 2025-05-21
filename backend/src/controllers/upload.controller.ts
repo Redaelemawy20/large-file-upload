@@ -4,6 +4,7 @@ import {
   formatFileInfo,
   logFileUpload,
   getUploadSystemStatus,
+  sortChunkFiles,
 } from '../services/upload.service';
 import path from 'path';
 import fs from 'fs';
@@ -94,4 +95,39 @@ export const uploadChunk = (req: Request, res: Response) => {
   }
 
   res.json({ message: 'Chunk received', chunkIndex: chunkIdx });
+};
+
+export const completeUpload = async (req: Request, res: Response) => {
+  const { sessionId, filename } = req.body;
+  if (!sessionId || !filename) {
+    return res.status(400).json({ error: 'Missing sessionId or filename' });
+  }
+
+  const sessionPath = path.join(UPLOAD_DIR, 'tmp', sessionId);
+  const outputFilePath = path.join(UPLOAD_DIR, `${sessionId}_${filename}`);
+  try {
+    const chunkFiles = sortChunkFiles(await fs.promises.readdir(sessionPath));
+    const writeStream = fs.createWriteStream(outputFilePath);
+
+    for (const chunkFile of chunkFiles) {
+      const chunkPath = path.join(sessionPath, chunkFile);
+      const data = await fs.promises.readFile(chunkPath);
+      writeStream.write(data);
+    }
+
+    writeStream.end();
+
+    writeStream.on('finish', async () => {
+      // Optional: Cleanup
+      await fs.promises.rm(sessionPath, { recursive: true, force: true });
+
+      res.json({
+        message: 'File successfully assembled',
+        filePath: outputFilePath,
+      });
+    });
+  } catch (err) {
+    console.error('Failed to complete upload:', err);
+    res.status(500).json({ error: 'Failed to finalize upload' });
+  }
 };

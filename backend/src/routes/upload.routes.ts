@@ -8,6 +8,7 @@ import {
   getSessionId,
   uploadChunk,
   CHUNK_DIR,
+  completeUpload,
 } from '../controllers/upload.controller';
 import { validateFileType } from '../middleware/validation.middleware';
 import {
@@ -100,5 +101,7 @@ const uploadMemory = multer({ storage: multer.memoryStorage() });
 fs.mkdirSync(CHUNK_DIR, { recursive: true });
 
 router.post('/upload-chunk', uploadMemory.single('chunk'), uploadChunk);
+
+router.post('/complete-upload', completeUpload);
 
 export default router;

@@ -1,3 +1,4 @@
+import path from 'path';
 import { FILE_SIZE_LIMIT_DESCRIPTION } from '../config/upload.config';
 
 /**
@@ -31,4 +32,15 @@ export const getUploadSystemStatus = () => {
     allowedFilesPerUpload: 1,
     service: 'File Upload API',
   };
+};
+
+export const sortChunkFiles = (files: string[]) => {
+  console.log(files);
+  return files
+    .filter((f) => f.endsWith('.part'))
+    .sort((a, b) => {
+      const aIndex = parseInt(path.basename(a).split('.')[0], 10);
+      const bIndex = parseInt(path.basename(b).split('.')[0], 10);
+      return aIndex - bIndex;
+    });
 };
