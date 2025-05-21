@@ -5,6 +5,9 @@ import {
   logFileUpload,
   getUploadSystemStatus,
 } from '../services/upload.service';
+import path from 'path';
+import fs from 'fs';
+import { UPLOAD_DIR } from '../config/upload.config';
 
 /**
  * Handle file upload
@@ -48,6 +51,8 @@ export const getSessionId = (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing filename or filesize' });
   }
   const sessionId = crypto.randomBytes(16).toString('hex');
+  console.log(uploadSessions);
+
   uploadSessions.set(sessionId, {
     filename,
     filesize,
@@ -58,6 +63,35 @@ export const getSessionId = (req: Request, res: Response) => {
     filename,
     filesize,
     sessionId,
-    chunkSize: 1024 * 1024,
+    chunkSize: 1024 * 1024, // 1MB
   });
+};
+
+export const CHUNK_DIR = path.join(UPLOAD_DIR, 'tmp');
+export const uploadChunk = (req: Request, res: Response) => {
+  const { sessionId, chunkIndex } = req.body;
+  if (!sessionId || chunkIndex === undefined || !req.file) {
+    return res.status(400).json({ error: 'Missing required data' });
+  }
+
+  const session = uploadSessions.get(sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'Invalid session ID' });
+  }
+
+  const chunkIdx = parseInt(chunkIndex, 10);
+  if (isNaN(chunkIdx)) {
+    return res.status(400).json({ error: 'Invalid chunk index' });
+  }
+  const sessionFolder = path.join(CHUNK_DIR, sessionId);
+  fs.mkdirSync(sessionFolder, { recursive: true });
+
+  const chunkPath = path.join(sessionFolder, `${chunkIdx}.part`);
+  fs.writeFileSync(chunkPath, req.file.buffer);
+  const receivedChunks = session.receivedChunks;
+  if (!receivedChunks.includes(chunkIdx)) {
+    receivedChunks.push(chunkIdx);
+  }
+
+  res.json({ message: 'Chunk received', chunkIndex: chunkIdx });
 };

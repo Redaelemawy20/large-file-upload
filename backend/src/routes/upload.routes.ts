@@ -6,6 +6,8 @@ import {
   uploadFile,
   getUploadStatus,
   getSessionId,
+  uploadChunk,
+  CHUNK_DIR,
 } from '../controllers/upload.controller';
 import { validateFileType } from '../middleware/validation.middleware';
 import {
@@ -92,5 +94,11 @@ router.post(
 router.get('/status', getUploadStatus);
 
 router.post('/start-upload', getSessionId);
+
+const uploadMemory = multer({ storage: multer.memoryStorage() });
+
+fs.mkdirSync(CHUNK_DIR, { recursive: true });
+
+router.post('/upload-chunk', uploadMemory.single('chunk'), uploadChunk);
 
 export default router;
