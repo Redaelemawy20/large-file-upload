@@ -1,22 +1,24 @@
 import { useRef, useState } from 'react';
 import Form from './Form';
+
 const ChunkedUploadForm = () => {
-  const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [chunkIndex, setChunkIndex] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<
+    'idle' | 'active' | 'success' | 'error' | 'paused'
+  >('idle');
   const uploadStoppedRef = useRef(false);
   // abort controller state
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
   const handleSubmit = async (file: File) => {
     if (!file) return;
-
-    setUploading(true);
+    uploadStoppedRef.current = false;
+    setUploadStatus('active');
     setUploadProgress(0);
 
     let sessionId = '';
     let chunkSize = 0;
-    console.log('chunked submit', file);
+    // console.log('chunked submit', file);
 
     try {
       // Start upload session
@@ -32,31 +34,39 @@ const ChunkedUploadForm = () => {
       );
 
       const data = await response.json();
-      console.log(data);
+      // console.log(data);
       sessionId = data.sessionId;
       chunkSize = data.chunkSize;
-      let chunkIndex = 0;
+      let currentChunkIndex = 0;
       if (sessionId && chunkSize) {
         for (let start = 0; start < file.size; start += chunkSize) {
           if (uploadStoppedRef.current) {
-            console.log('uploadStopped', uploadStoppedRef.current);
+            // console.log('uploadStopped', uploadStoppedRef.current);
+            setUploadStatus('paused');
             return;
           }
-          console.log('start', start);
+          // console.log('start', start);
 
-          await uploadChunk(file, sessionId, start, chunkSize, chunkIndex);
-          chunkIndex++;
+          await uploadChunk(
+            file,
+            sessionId,
+            start,
+            chunkSize,
+            currentChunkIndex
+          );
+          currentChunkIndex++;
           setUploadProgress(Math.round((start * 100) / file.size));
         }
         setUploadProgress(100);
       }
       await completeUpload(sessionId, file.name);
-      setUploading(false);
-    } catch (error) {
-      console.error('Error during chunked upload:', error);
-      console.log('uploadStopped', uploadStoppedRef.current);
+      setUploadStatus('success');
+    } catch (_error) {
+      // Handle upload errors
       if (!uploadStoppedRef.current) {
-        setUploading(false);
+        setUploadStatus('error');
+      } else {
+        setUploadStatus('paused');
       }
     }
   };
@@ -68,11 +78,11 @@ const ChunkedUploadForm = () => {
     chunkSize: number,
     chunkIndex: number
   ): Promise<void> => {
-    console.log(
-      `Uploading chunk from ${start} to ${
-        start + chunkSize
-      } for session ${sessionId}`
-    );
+    // console.log(
+    //   `Uploading chunk from ${start} to ${
+    //     start + chunkSize
+    //   } for session ${sessionId}`
+    // );
     const abortController = new AbortController();
     setAbortController(abortController);
     const end = Math.min(start + chunkSize, file.size);
@@ -91,8 +101,7 @@ const ChunkedUploadForm = () => {
       });
 
       const data = await res.json();
-      console.log('Chunk upload response:', data);
-      setChunkIndex(chunkIndex + 1);
+      // console.log('Chunk upload response:', data);
       return data;
     } catch (error) {
       console.error('Chunk upload failed:', error);
@@ -111,28 +120,33 @@ const ChunkedUploadForm = () => {
       }
     );
     const data = await response.json();
-    console.log('Upload complete:', data);
+    // console.log('Upload complete:', data);
     return data;
   };
   const stopUpload = () => {
     uploadStoppedRef.current = true;
+    setUploadStatus('paused');
     if (abortController) {
       abortController.abort();
     }
   };
+
+  const isUploading = uploadStatus === 'active';
+
   return (
     <>
       {uploadStoppedRef.current && <div>Upload stopped</div>}
       <Form
-        uploading={uploading}
         uploadProgress={uploadProgress}
         maxFileSize={10000000000} // 10GB
         maxFileFormat={10000000000} // 10GB
         onUpload={handleSubmit}
+        uploadStatus={uploadStatus}
+        setUploadStatus={setUploadStatus}
       />
-      {uploading && (
+      {isUploading && (
         <button
-          className="bg-accent text-white p-2  mt-4 rounded-md"
+          className="bg-accent text-white p-2 mt-4 rounded-md"
           onClick={stopUpload}
         >
           Stop Upload

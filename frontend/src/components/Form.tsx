@@ -1,24 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent, FormEvent } from 'react';
 
 const Form = ({
-  uploading,
   uploadProgress,
   maxFileSize,
   maxFileFormat,
   onUpload,
+  uploadStatus,
+  setUploadStatus,
 }: {
-  uploading: boolean;
   uploadProgress: number;
   maxFileSize: number;
   maxFileFormat: number;
   onUpload: (f: File) => Promise<void>;
+  uploadStatus: 'idle' | 'active' | 'success' | 'error' | 'paused';
+  setUploadStatus: (
+    status: 'idle' | 'active' | 'success' | 'error' | 'paused'
+  ) => void;
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<
-    'idle' | 'success' | 'error'
-  >('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [detailedError, setDetailedError] = useState<string | null>(null);
 
@@ -84,20 +85,23 @@ const Form = ({
     else return (bytes / 1073741824).toFixed(2) + ' GB';
   };
 
+  useEffect(() => {
+    if (uploadStatus === 'success') {
+      setFile(null);
+      const fileInput = document.getElementById(
+        'fileInput'
+      ) as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+    }
+  }, [uploadStatus]);
+  console.log(file);
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (file) {
       try {
         await onUpload(file);
-        setUploadStatus('success');
-        setFile(null);
-        // Reset form
-        const fileInput = document.getElementById(
-          'fileInput'
-        ) as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
       } catch (error: unknown) {
-        setUploadStatus('error');
         if (error instanceof Error) {
           setErrorMessage(error.message);
         } else {
@@ -118,6 +122,8 @@ const Form = ({
             ? 'border-accent bg-red-50'
             : uploadStatus === 'success'
             ? 'border-green-500 bg-green-50'
+            : uploadStatus === 'paused'
+            ? 'border-yellow-500 bg-yellow-50'
             : 'border-gray-300'
         }`}
         onDragEnter={handleDrag}
@@ -130,13 +136,13 @@ const Form = ({
           id="fileInput"
           onChange={handleFileChange}
           className="hidden"
-          disabled={uploading}
+          disabled={uploadStatus === 'active'}
         />
 
         <label
           htmlFor="fileInput"
           className={`cursor-pointer flex flex-col items-center justify-center space-y-2 ${
-            uploading ? 'opacity-50 pointer-events-none' : ''
+            uploadStatus === 'active' ? 'opacity-50 pointer-events-none' : ''
           }`}
         >
           {uploadStatus === 'success' ? (
@@ -169,6 +175,36 @@ const Form = ({
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
+          ) : uploadStatus === 'paused' ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 text-yellow-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          ) : uploadStatus === 'active' ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 text-blue-500 animate-pulse"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+              />
+            </svg>
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -199,6 +235,10 @@ const Form = ({
                 <p className="text-sm text-neutral">{detailedError}</p>
               )}
             </div>
+          ) : uploadStatus === 'paused' ? (
+            <span className="text-yellow-600 font-medium">Upload paused</span>
+          ) : uploadStatus === 'active' ? (
+            <span className="text-blue-600 font-medium">Uploading...</span>
           ) : (
             <span className="text-neutral font-medium">
               {file
@@ -215,7 +255,7 @@ const Form = ({
         </label>
       </div>
 
-      {uploading && (
+      {uploadStatus === 'active' && (
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-neutral">
             <span>Uploading...</span>
@@ -232,14 +272,22 @@ const Form = ({
 
       <button
         type="submit"
-        disabled={!file || uploading}
+        disabled={
+          !file ||
+          uploadStatus === 'active' ||
+          uploadStatus === 'success' ||
+          uploadStatus === 'paused'
+        }
         className={`w-full py-3 px-4 rounded-md text-white font-medium transition-all ${
-          !file || uploading
+          !file ||
+          uploadStatus === 'active' ||
+          uploadStatus === 'success' ||
+          uploadStatus === 'paused'
             ? 'bg-neutral cursor-not-allowed opacity-70'
             : 'bg-accent hover:bg-opacity-90'
         }`}
       >
-        {uploading ? 'Uploading...' : 'Upload File'}
+        {uploadStatus === 'active' ? 'Uploading...' : 'Upload File'}
       </button>
     </form>
   );
