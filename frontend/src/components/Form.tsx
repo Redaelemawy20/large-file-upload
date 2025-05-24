@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ChangeEvent, DragEvent, FormEvent } from 'react';
 
 const Form = ({
@@ -8,6 +8,8 @@ const Form = ({
   onUpload,
   uploadStatus,
   setUploadStatus,
+  file,
+  setFile,
 }: {
   uploadProgress: number;
   maxFileSize: number;
@@ -17,8 +19,9 @@ const Form = ({
   setUploadStatus: (
     status: 'idle' | 'active' | 'success' | 'error' | 'paused'
   ) => void;
+  file: File | null;
+  setFile: (file: File | null) => void;
 }) => {
-  const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [detailedError, setDetailedError] = useState<string | null>(null);
@@ -94,7 +97,6 @@ const Form = ({
       if (fileInput) fileInput.value = '';
     }
   }, [uploadStatus]);
-  console.log(file);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
