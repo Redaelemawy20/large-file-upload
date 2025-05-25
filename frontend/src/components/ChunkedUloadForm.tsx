@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Form from './Form';
-
+import * as api from '../services/api';
 interface IncompleteUpload {
+  id: number;
   fileName: string;
   fileSize: number;
   sessionId: string;
@@ -47,6 +48,8 @@ const ChunkedUploadForm = ({
 
   // Initialize state from selectedUpload if provided
   useEffect(() => {
+    console.log('selectedUpload', selectedUpload);
+
     if (selectedUpload) {
       setLastUploadedChunkIndex(selectedUpload.lastChunkIndex);
       setSessionInfo({
@@ -65,6 +68,8 @@ const ChunkedUploadForm = ({
 
   // Update parent component with status changes
   useEffect(() => {
+    console.log('uploadStatus', uploadStatus, 'uploadProgress', uploadProgress);
+
     if (file && (uploadStatus === 'active' || uploadStatus === 'paused')) {
       onUploadStatusChange(uploadStatus, {
         fileName: file.name,
@@ -101,23 +106,9 @@ const ChunkedUploadForm = ({
       let chunkSize = sessionInfo?.chunkSize || 0;
 
       if (lastUploadedChunkIndex < 0 || !sessionInfo) {
-        const response = await fetch(
-          'http://localhost:3000/api/upload/start-upload',
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            method: 'POST',
-            body: JSON.stringify({
-              filename: file.name,
-              filesize: file.size,
-            }),
-          }
-        );
-
-        const data = await response.json();
-        sessionId = data.sessionId;
-        chunkSize = data.chunkSize;
+        const response = await api.startUpload(file);
+        sessionId = response.sessionId;
+        chunkSize = response.chunkSize;
         setSessionInfo({ sessionId, chunkSize });
       }
 
@@ -142,7 +133,7 @@ const ChunkedUploadForm = ({
         }
         setUploadProgress(100);
       }
-      await completeUpload(sessionId);
+      await api.completeUpload(sessionId, file.name);
       setUploadStatus('success');
       setLastUploadedChunkIndex(-1); // Reset after successful upload
       setSessionInfo(null); // Clear session info
@@ -175,38 +166,18 @@ const ChunkedUploadForm = ({
     formData.append('sessionId', sessionId);
 
     try {
-      const res = await fetch('http://localhost:3000/api/upload/upload-chunk', {
-        method: 'POST',
-        body: formData,
-        signal: abortController.signal,
-      });
-
-      const data = await res.json();
-      return data;
+      await api.uploadChunk(
+        chunkToUpload,
+        chunkIndex,
+        sessionId,
+        chunkSize,
+        abortController.signal
+      );
     } catch (error) {
       console.error('Chunk upload failed:', error);
       throw error;
     }
   };
-
-  const completeUpload = async (sessionId: string) => {
-    const response = await fetch(
-      'http://localhost:3000/api/upload/complete-upload',
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          sessionId,
-          filename: file?.name || '',
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    const data = await response.json();
-    return data;
-  };
-
   const stopUpload = () => {
     uploadStoppedRef.current = true;
     setUploadStatus('paused');
@@ -220,38 +191,80 @@ const ChunkedUploadForm = ({
   };
 
   const isUploading = uploadStatus === 'active';
-  const isPaused = uploadStatus === 'paused';
-
-  const handleFileSelected = (selectedFile: File | null) => {
-    setFile(selectedFile);
-  };
+  console.log('selectedUpload', selectedUpload);
 
   return (
     <>
-      <Form
-        uploadProgress={uploadProgress}
-        maxFileSize={10000000000} // 10GB
-        maxFileFormat={10000000000} // 10GB
-        onUpload={handleSubmit}
-        uploadStatus={uploadStatus}
-        setUploadStatus={setUploadStatus}
-        file={file}
-        setFile={handleFileSelected}
-      />
-      {isUploading && (
+      {selectedUpload ? (
+        <div className="mb-6">
+          <div className="p-4 border rounded-lg bg-blue-50 mb-4">
+            <h3 className="font-medium mb-2">
+              {uploadStatus === 'active' ? 'Uploading: ' : 'Resume Upload: '}
+              {selectedUpload.fileName}
+            </h3>
+            <div className="flex justify-between text-sm mb-1">
+              <span>
+                {uploadStatus === 'active'
+                  ? `Progress: ${uploadProgress}%`
+                  : `Paused at: ${selectedUpload.uploadProgress}%`}
+              </span>
+              <span>
+                Size: {Math.round(selectedUpload.fileSize / 1024 / 1024)} MB
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+              <div
+                className={`h-2.5 rounded-full ${
+                  uploadStatus === 'active'
+                    ? 'bg-primary animate-pulse'
+                    : 'bg-blue-500'
+                }`}
+                style={{
+                  width: `${
+                    uploadStatus === 'active'
+                      ? uploadProgress
+                      : selectedUpload.uploadProgress
+                  }%`,
+                }}
+              ></div>
+            </div>
+
+            {uploadStatus === 'active' ? (
+              <button
+                onClick={stopUpload}
+                className="w-full py-2 px-4 bg-accent text-white rounded-md hover:bg-red-600 transition-colors"
+              >
+                Pause Upload
+              </button>
+            ) : (
+              <button
+                onClick={resumeUpload}
+                className="w-full py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+              >
+                Resume Upload
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <Form
+          uploadProgress={uploadProgress}
+          maxFileSize={10000000000} // 10GB
+          maxFileFormat={10000000000} // 10GB
+          onUpload={handleSubmit}
+          uploadStatus={uploadStatus}
+          setUploadStatus={setUploadStatus}
+          file={file}
+          setFile={setFile}
+        />
+      )}
+
+      {isUploading && !selectedUpload && (
         <button
           className="bg-accent text-white p-2 mt-4 rounded-md"
           onClick={stopUpload}
         >
           Stop Upload
-        </button>
-      )}
-      {isPaused && (
-        <button
-          className="bg-green-500 text-white p-2 mt-4 rounded-md"
-          onClick={resumeUpload}
-        >
-          Resume Upload
         </button>
       )}
     </>

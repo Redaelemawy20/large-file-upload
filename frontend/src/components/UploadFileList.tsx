@@ -16,9 +16,8 @@ const UploadFileList = () => {
   const [incompleteUploads, setIncompleteUploads] = useState<
     IncompleteUpload[]
   >([]);
-  const [selectedUpload, setSelectedUpload] = useState<IncompleteUpload | null>(
-    incompleteUploads[0] || null
-  );
+  // we need to convert it index
+  const [selectedUploadIndex, setSelectedUploadIndex] = useState<number>(0);
 
   // Load incomplete uploads from localStorage on component mount
   useEffect(() => {
@@ -34,7 +33,7 @@ const UploadFileList = () => {
     const updatedUploads = [...incompleteUploads, newItem];
     setIncompleteUploads(updatedUploads);
     localStorage.setItem('incompleteUploads', JSON.stringify(updatedUploads));
-    setSelectedUpload(newItem);
+    setSelectedUploadIndex(updatedUploads.length - 1);
   };
 
   // Update an existing incomplete upload in localStorage
@@ -61,8 +60,8 @@ const UploadFileList = () => {
     localStorage.setItem('incompleteUploads', JSON.stringify(updatedUploads));
 
     // If the removed upload was selected, clear selection
-    if (selectedUpload?.sessionId === uploadId) {
-      setSelectedUpload(null);
+    if (incompleteUploads[selectedUploadIndex]?.sessionId === uploadId) {
+      setSelectedUploadIndex(0);
     }
   };
 
@@ -76,7 +75,6 @@ const UploadFileList = () => {
       lastChunkIndex: number;
       chunkSize: number;
       uploadProgress: number;
-      filePath: string;
     }
   ) => {
     if (status === 'active' && fileInfo) {
@@ -89,13 +87,12 @@ const UploadFileList = () => {
         chunkSize: fileInfo.chunkSize,
         lastModified: Date.now(),
         uploadProgress: fileInfo.uploadProgress,
-        filePath: fileInfo.filePath,
       };
       console.log(upload);
       if (upload.uploadProgress > 0) {
         updateIncompleteUpload({
           ...upload,
-          id: selectedUpload?.id || 0,
+          id: incompleteUploads[selectedUploadIndex]?.id || 0,
         });
       } else {
         addIncompleteUpload(upload);
@@ -104,15 +101,15 @@ const UploadFileList = () => {
       // Update progress when paused
 
       const updatedUpload = {
-        ...selectedUpload,
+        ...incompleteUploads[selectedUploadIndex],
         lastChunkIndex: fileInfo.lastChunkIndex,
         uploadProgress: fileInfo.uploadProgress,
         lastModified: Date.now(),
       };
       updateIncompleteUpload(updatedUpload as IncompleteUpload);
-    } else if (status === 'success' && selectedUpload) {
+    } else if (status === 'success' && incompleteUploads[selectedUploadIndex]) {
       // Remove from incomplete uploads when completed
-      removeIncompleteUpload(selectedUpload.sessionId);
+      removeIncompleteUpload(incompleteUploads[selectedUploadIndex].sessionId);
     }
   };
 
@@ -129,7 +126,7 @@ const UploadFileList = () => {
     return new Date(timestamp).toLocaleString();
   };
 
-  console.log(incompleteUploads);
+  console.log(incompleteUploads, incompleteUploads[selectedUploadIndex]);
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">File Upload Manager</h1>
@@ -143,15 +140,15 @@ const UploadFileList = () => {
               <p className="text-gray-500">No incomplete uploads</p>
             ) : (
               <ul className="space-y-2">
-                {incompleteUploads.map((upload) => (
+                {incompleteUploads.map((upload, index) => (
                   <li
                     key={upload.id}
                     className={`p-3 rounded-md cursor-pointer transition-colors ${
-                      selectedUpload?.id === upload.id
+                      incompleteUploads[selectedUploadIndex]?.id === upload.id
                         ? 'bg-blue-100 border border-blue-300'
                         : 'hover:bg-gray-100'
                     }`}
-                    onClick={() => setSelectedUpload(upload)}
+                    onClick={() => setSelectedUploadIndex(index)}
                   >
                     <div className="font-medium truncate">
                       {upload.fileName}
@@ -175,7 +172,7 @@ const UploadFileList = () => {
             )}
 
             <button
-              onClick={() => setSelectedUpload(null)}
+              onClick={() => setSelectedUploadIndex(0)}
               className="w-full mt-4 py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
             >
               Upload New File
@@ -186,13 +183,13 @@ const UploadFileList = () => {
         <div className="md:col-span-2">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">
-              {selectedUpload
-                ? `Resume Upload: ${selectedUpload.fileName}`
+              {incompleteUploads[selectedUploadIndex]
+                ? `Resume Upload: ${incompleteUploads[selectedUploadIndex].fileName}`
                 : 'Upload New File'}
             </h2>
 
             <ChunkedUploadForm
-              selectedUpload={selectedUpload}
+              selectedUpload={incompleteUploads[selectedUploadIndex]}
               onUploadStatusChange={handleUploadStatusChange}
             />
           </div>
