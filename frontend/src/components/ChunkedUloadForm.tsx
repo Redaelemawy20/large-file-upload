@@ -1,30 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import Form from './Form';
 import * as api from '../services/api';
-interface IncompleteUpload {
-  id: number;
-  fileName: string;
-  fileSize: number;
-  sessionId: string;
-  lastChunkIndex: number;
-  chunkSize: number;
-  lastModified: number;
-  uploadProgress: number;
-}
-
-interface ChunkedUploadFormProps {
+import type { FileInfo, IncompleteUpload, UploadStatus } from '../types';
+export interface ChunkedUploadFormProps {
   selectedUpload: IncompleteUpload | null;
-  onUploadStatusChange: (
-    status: 'idle' | 'active' | 'success' | 'error' | 'paused',
-    fileInfo?: {
-      fileName: string;
-      fileSize: number;
-      sessionId: string;
-      lastChunkIndex: number;
-      chunkSize: number;
-      uploadProgress: number;
-    }
-  ) => void;
+  onUploadStatusChange: (status: UploadStatus, fileInfo?: FileInfo) => void;
 }
 
 const ChunkedUploadForm = ({
@@ -33,9 +13,7 @@ const ChunkedUploadForm = ({
 }: ChunkedUploadFormProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<
-    'idle' | 'active' | 'success' | 'error' | 'paused'
-  >('idle');
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const uploadStoppedRef = useRef(false);
   const [lastUploadedChunkIndex, setLastUploadedChunkIndex] = useState(-1);
   const [sessionInfo, setSessionInfo] = useState<{

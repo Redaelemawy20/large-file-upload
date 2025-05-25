@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ChangeEvent, DragEvent, FormEvent } from 'react';
-
+import type { UploadStatus } from '../types';
 const Form = ({
   uploadProgress,
   maxFileSize,
@@ -15,10 +15,8 @@ const Form = ({
   maxFileSize: number;
   maxFileFormat: number;
   onUpload: () => Promise<void>;
-  uploadStatus: 'idle' | 'active' | 'success' | 'error' | 'paused';
-  setUploadStatus: (
-    status: 'idle' | 'active' | 'success' | 'error' | 'paused'
-  ) => void;
+  uploadStatus: UploadStatus;
+  setUploadStatus: (status: UploadStatus) => void;
   file: File | null;
   setFile: (file: File | null) => void;
 }) => {

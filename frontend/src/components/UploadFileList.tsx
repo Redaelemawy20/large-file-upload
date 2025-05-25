@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react';
 import ChunkedUploadForm from './ChunkedUloadForm';
-
-interface IncompleteUpload {
-  id: number;
-  fileName: string;
-  fileSize: number;
-  sessionId: string;
-  lastChunkIndex: number;
-  chunkSize: number;
-  lastModified: number;
-  uploadProgress: number;
-}
+import type { IncompleteUpload, UploadStatus, FileInfo } from '../types';
 
 const UploadFileList = () => {
   const [incompleteUploads, setIncompleteUploads] = useState<
@@ -67,26 +57,14 @@ const UploadFileList = () => {
 
   // Handle upload status changes
   const handleUploadStatusChange = (
-    status: 'idle' | 'active' | 'success' | 'error' | 'paused',
-    fileInfo?: {
-      fileName: string;
-      fileSize: number;
-      sessionId: string;
-      lastChunkIndex: number;
-      chunkSize: number;
-      uploadProgress: number;
-    }
+    status: UploadStatus,
+    fileInfo?: FileInfo
   ) => {
     if (status === 'active' && fileInfo) {
       // If starting a new upload or resuming
       const upload = {
-        fileName: fileInfo.fileName,
-        fileSize: fileInfo.fileSize,
-        sessionId: fileInfo.sessionId,
-        lastChunkIndex: fileInfo.lastChunkIndex,
-        chunkSize: fileInfo.chunkSize,
+        ...fileInfo,
         lastModified: Date.now(),
-        uploadProgress: fileInfo.uploadProgress,
       };
       console.log(upload);
       if (upload.uploadProgress > 0) {
@@ -126,7 +104,6 @@ const UploadFileList = () => {
     return new Date(timestamp).toLocaleString();
   };
 
-  console.log(incompleteUploads, incompleteUploads[selectedUploadIndex]);
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">File Upload Manager</h1>
