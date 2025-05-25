@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ChunkedUploadForm from './ChunkedUloadForm';
 import type { IncompleteUpload, UploadStatus, FileInfo } from '../types';
+import { formatDate, formatFileSize } from '../utils';
 
 const UploadFileList = () => {
   const [incompleteUploads, setIncompleteUploads] = useState<
@@ -90,20 +91,6 @@ const UploadFileList = () => {
       removeIncompleteUpload(incompleteUploads[selectedUploadIndex].sessionId);
     }
   };
-
-  // Format file size for display
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-    else if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + ' MB';
-    else return (bytes / 1073741824).toFixed(2) + ' GB';
-  };
-
-  // Format date for display
-  const formatDate = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleString();
-  };
-
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">File Upload Manager</h1>
