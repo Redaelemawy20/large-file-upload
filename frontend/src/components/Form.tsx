@@ -14,7 +14,7 @@ const Form = ({
   uploadProgress: number;
   maxFileSize: number;
   maxFileFormat: number;
-  onUpload: (f: File) => Promise<void>;
+  onUpload: () => Promise<void>;
   uploadStatus: 'idle' | 'active' | 'success' | 'error' | 'paused';
   setUploadStatus: (
     status: 'idle' | 'active' | 'success' | 'error' | 'paused'
@@ -102,7 +102,7 @@ const Form = ({
     e.preventDefault();
     if (file) {
       try {
-        await onUpload(file);
+        await onUpload();
       } catch (error: unknown) {
         if (error instanceof Error) {
           setErrorMessage(error.message);

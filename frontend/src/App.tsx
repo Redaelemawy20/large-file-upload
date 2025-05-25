@@ -1,15 +1,10 @@
-import SmallFileUploadForm from './components/SmallFileUploadForm';
-import ChunkedUploadForm from './components/ChunkedUloadForm';
+import React from 'react';
+import UploadFileList from './components/UploadFileList';
+
 function App() {
   return (
-    <div className="container min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-xl bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-primary mb-6">
-          Upload your files here
-        </h1>
-        {/* <SmallFileUploadForm /> */}
-        <ChunkedUploadForm />
-      </div>
+    <div className="min-h-screen bg-gray-100">
+      <UploadFileList />
     </div>
   );
 }

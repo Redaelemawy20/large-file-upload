@@ -1,7 +1,35 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Form from './Form';
 
-const ChunkedUploadForm = () => {
+interface IncompleteUpload {
+  fileName: string;
+  fileSize: number;
+  sessionId: string;
+  lastChunkIndex: number;
+  chunkSize: number;
+  lastModified: number;
+  uploadProgress: number;
+}
+
+interface ChunkedUploadFormProps {
+  selectedUpload: IncompleteUpload | null;
+  onUploadStatusChange: (
+    status: 'idle' | 'active' | 'success' | 'error' | 'paused',
+    fileInfo?: {
+      fileName: string;
+      fileSize: number;
+      sessionId: string;
+      lastChunkIndex: number;
+      chunkSize: number;
+      uploadProgress: number;
+    }
+  ) => void;
+}
+
+const ChunkedUploadForm = ({
+  selectedUpload,
+  onUploadStatusChange,
+}: ChunkedUploadFormProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<
@@ -17,9 +45,42 @@ const ChunkedUploadForm = () => {
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
 
+  // Initialize state from selectedUpload if provided
+  useEffect(() => {
+    if (selectedUpload) {
+      setLastUploadedChunkIndex(selectedUpload.lastChunkIndex);
+      setSessionInfo({
+        sessionId: selectedUpload.sessionId,
+        chunkSize: selectedUpload.chunkSize,
+      });
+      setUploadProgress(selectedUpload.uploadProgress);
+    } else {
+      // Reset state if no upload is selected
+      setLastUploadedChunkIndex(-1);
+      setSessionInfo(null);
+      setUploadProgress(0);
+      setUploadStatus('idle');
+    }
+  }, [selectedUpload]);
+
+  // Update parent component with status changes
+  useEffect(() => {
+    if (file && (uploadStatus === 'active' || uploadStatus === 'paused')) {
+      onUploadStatusChange(uploadStatus, {
+        fileName: file.name,
+        fileSize: file.size,
+        sessionId: sessionInfo?.sessionId || '',
+        lastChunkIndex: lastUploadedChunkIndex,
+        chunkSize: sessionInfo?.chunkSize || 0,
+        uploadProgress,
+      });
+    } else if (uploadStatus === 'success') {
+      onUploadStatusChange(uploadStatus);
+    }
+  }, [uploadStatus, uploadProgress]);
+
   const handleSubmit = async (): Promise<void> => {
     if (!file) return;
-    setFile(file);
     uploadStoppedRef.current = false;
     setUploadStatus('active');
 
@@ -161,6 +222,10 @@ const ChunkedUploadForm = () => {
   const isUploading = uploadStatus === 'active';
   const isPaused = uploadStatus === 'paused';
 
+  const handleFileSelected = (selectedFile: File | null) => {
+    setFile(selectedFile);
+  };
+
   return (
     <>
       <Form
@@ -171,7 +236,7 @@ const ChunkedUploadForm = () => {
         uploadStatus={uploadStatus}
         setUploadStatus={setUploadStatus}
         file={file}
-        setFile={setFile}
+        setFile={handleFileSelected}
       />
       {isUploading && (
         <button
