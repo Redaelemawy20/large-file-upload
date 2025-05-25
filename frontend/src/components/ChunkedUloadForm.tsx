@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Form from './Form';
 import * as api from '../services/api';
 import type { FileInfo, IncompleteUpload, UploadStatus } from '../types';
+import UploadingControls from './UploadingControls';
+
 export interface ChunkedUploadFormProps {
   selectedUpload: IncompleteUpload | null;
   onUploadStatusChange: (status: UploadStatus, fileInfo?: FileInfo) => void;
@@ -168,62 +170,16 @@ const ChunkedUploadForm = ({
     handleSubmit();
   };
 
-  const isUploading = uploadStatus === 'active';
-  console.log('selectedUpload', selectedUpload);
-
   return (
     <>
       {selectedUpload ? (
-        <div className="mb-6">
-          <div className="p-4 border rounded-lg bg-blue-50 mb-4">
-            <h3 className="font-medium mb-2">
-              {uploadStatus === 'active' ? 'Uploading: ' : 'Resume Upload: '}
-              {selectedUpload.fileName}
-            </h3>
-            <div className="flex justify-between text-sm mb-1">
-              <span>
-                {uploadStatus === 'active'
-                  ? `Progress: ${uploadProgress}%`
-                  : `Paused at: ${selectedUpload.uploadProgress}%`}
-              </span>
-              <span>
-                Size: {Math.round(selectedUpload.fileSize / 1024 / 1024)} MB
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-              <div
-                className={`h-2.5 rounded-full ${
-                  uploadStatus === 'active'
-                    ? 'bg-primary animate-pulse'
-                    : 'bg-blue-500'
-                }`}
-                style={{
-                  width: `${
-                    uploadStatus === 'active'
-                      ? uploadProgress
-                      : selectedUpload.uploadProgress
-                  }%`,
-                }}
-              ></div>
-            </div>
-
-            {uploadStatus === 'active' ? (
-              <button
-                onClick={stopUpload}
-                className="w-full py-2 px-4 bg-accent text-white rounded-md hover:bg-red-600 transition-colors"
-              >
-                Pause Upload
-              </button>
-            ) : (
-              <button
-                onClick={resumeUpload}
-                className="w-full py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-              >
-                Resume Upload
-              </button>
-            )}
-          </div>
-        </div>
+        <UploadingControls
+          uploadStatus={uploadStatus}
+          uploadProgress={uploadProgress}
+          selectedUpload={selectedUpload}
+          stopUpload={stopUpload}
+          resumeUpload={resumeUpload}
+        />
       ) : (
         <Form
           uploadProgress={uploadProgress}
@@ -235,15 +191,6 @@ const ChunkedUploadForm = ({
           file={file}
           setFile={setFile}
         />
-      )}
-
-      {isUploading && !selectedUpload && (
-        <button
-          className="bg-accent text-white p-2 mt-4 rounded-md"
-          onClick={stopUpload}
-        >
-          Stop Upload
-        </button>
       )}
     </>
   );
