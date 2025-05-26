@@ -44,6 +44,9 @@ export const completeUpload = async (sessionId: string, filename: string) => {
     {
       method: 'POST',
       body: JSON.stringify({ sessionId, filename }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     }
   );
   const data = await response.json();
