@@ -20,7 +20,7 @@ const UploadingControls: React.FC<UploadingControlsProps> = ({
 
   return (
     <div className="mb-6">
-      <div className="p-4 border rounded-lg bg-blue-50 mb-4">
+      <div className="p-4 border rounded-lg bg-primary/10 mb-4">
         <h3 className="font-medium mb-2">
           {selectedUpload.status === 'active'
             ? 'Uploading: '
@@ -37,12 +37,12 @@ const UploadingControls: React.FC<UploadingControlsProps> = ({
             Size: {Math.round(selectedUpload.fileSize / 1024 / 1024) || 0} MB
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+        <div className="w-full bg-neutral/20 rounded-full h-2.5 mb-4">
           <div
             className={`h-2.5 rounded-full transition-all duration-200 ${
               selectedUpload.status === 'active'
-                ? 'bg-blue-500 animate-pulse'
-                : 'bg-blue-500'
+                ? 'bg-primary animate-pulse'
+                : 'bg-primary'
             }`}
             style={{
               width: `${progress}%`,
@@ -53,7 +53,7 @@ const UploadingControls: React.FC<UploadingControlsProps> = ({
         {selectedUpload.status === 'active' ? (
           <button
             onClick={stopUpload}
-            className="w-full py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+            className="w-full py-2 px-4 bg-accent text-white rounded-md hover:bg-accent/80 transition-colors"
             type="button"
           >
             Pause Upload
@@ -61,7 +61,7 @@ const UploadingControls: React.FC<UploadingControlsProps> = ({
         ) : (
           <button
             onClick={resumeUpload}
-            className="w-full py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+            className="w-full py-2 px-4 bg-secondary text-white rounded-md hover:bg-secondary/80 transition-colors"
             type="button"
           >
             Resume Upload

@@ -14,6 +14,8 @@ const SmallFileUploadForm = () => {
   const handleUpload = async (): Promise<void> => {
     if (!file) return;
 
+    console.log(file); // Log file before upload starts
+
     setUploadStatus('active');
     setUploadProgress(0);
 
@@ -71,7 +73,7 @@ const SmallFileUploadForm = () => {
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="mb-4 text-sm text-gray-600">
+      <div className="mb-4 text-sm text-neutral">
         <p>Use this form to upload files smaller than 10MB.</p>
       </div>
 

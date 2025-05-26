@@ -21,6 +21,8 @@ const ChunkedUploadForm = () => {
   const handleSubmit = async (): Promise<void> => {
     if (!file) return;
 
+    console.log(file); // Log file before upload starts
+
     uploadStoppedRef.current = false;
     setUploadStatus('active');
 
@@ -167,7 +169,6 @@ const ChunkedUploadForm = () => {
     uploadProgress,
     status: uploadStatus,
   };
-  console.log(file);
 
   return (
     <>

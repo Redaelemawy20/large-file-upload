@@ -111,14 +111,14 @@ const Form = ({
       <div
         className={`border-2 border-dashed rounded-lg p-6 text-center ${
           dragActive
-            ? 'border-primary bg-blue-50'
+            ? 'border-primary bg-primary/10'
             : uploadStatus === 'error'
-            ? 'border-accent bg-red-50'
+            ? 'border-accent bg-accent/10'
             : uploadStatus === 'success'
-            ? 'border-green-500 bg-green-50'
+            ? 'border-secondary bg-secondary/10'
             : uploadStatus === 'paused'
-            ? 'border-yellow-500 bg-yellow-50'
-            : 'border-gray-300'
+            ? 'border-secondary bg-secondary/10'
+            : 'border-neutral/30'
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -142,7 +142,7 @@ const Form = ({
           {uploadStatus === 'success' ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 text-green-500"
+              className="h-12 w-12 text-secondary"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -172,7 +172,7 @@ const Form = ({
           ) : uploadStatus === 'paused' ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 text-yellow-500"
+              className="h-12 w-12 text-secondary"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -187,7 +187,7 @@ const Form = ({
           ) : uploadStatus === 'active' ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 text-blue-500 animate-pulse"
+              className="h-12 w-12 text-primary animate-pulse"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -217,7 +217,7 @@ const Form = ({
           )}
 
           {uploadStatus === 'success' ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-secondary font-medium">
               Upload successful!
             </span>
           ) : uploadStatus === 'error' ? (
@@ -230,9 +230,9 @@ const Form = ({
               )}
             </div>
           ) : uploadStatus === 'paused' ? (
-            <span className="text-yellow-600 font-medium">Upload paused</span>
+            <span className="text-secondary font-medium">Upload paused</span>
           ) : uploadStatus === 'active' ? (
-            <span className="text-blue-600 font-medium">Uploading...</span>
+            <span className="text-primary font-medium">Uploading...</span>
           ) : (
             <span className="text-neutral font-medium">
               {file
@@ -255,7 +255,7 @@ const Form = ({
             <span>Uploading...</span>
             <span>{uploadProgress}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div className="w-full bg-neutral/20 rounded-full h-2.5">
             <div
               className="bg-primary h-2.5 rounded-full transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
@@ -277,8 +277,8 @@ const Form = ({
           uploadStatus === 'active' ||
           uploadStatus === 'success' ||
           uploadStatus === 'paused'
-            ? 'bg-neutral cursor-not-allowed opacity-70'
-            : 'bg-accent hover:bg-opacity-90'
+            ? 'bg-neutral/70 cursor-not-allowed'
+            : 'bg-primary hover:bg-primary/90'
         }`}
       >
         {uploadStatus === 'active' ? 'Uploading...' : 'Upload File'}
