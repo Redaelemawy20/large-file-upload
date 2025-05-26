@@ -1,18 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Form from './Form';
 import * as api from '../services/api';
-import type { FileInfo, IncompleteUpload, UploadStatus } from '../types';
+import type { UploadStatus } from '../types';
 import UploadingControls from './UploadingControls';
 
-export interface ChunkedUploadFormProps {
-  selectedUpload: IncompleteUpload | null;
-  onUploadStatusChange: (status: UploadStatus, fileInfo?: FileInfo) => void;
-}
-
-const ChunkedUploadForm = ({
-  selectedUpload,
-  onUploadStatusChange,
-}: ChunkedUploadFormProps) => {
+const ChunkedUploadForm = () => {
+  // Internal state for the component
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -22,50 +15,12 @@ const ChunkedUploadForm = ({
     sessionId: string;
     chunkSize: number;
   } | null>(null);
-  // abort controller state
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
 
-  // Initialize state from selectedUpload if provided
-  useEffect(() => {
-    console.log('selectedUpload', selectedUpload);
-
-    if (selectedUpload) {
-      setLastUploadedChunkIndex(selectedUpload.lastChunkIndex);
-      setSessionInfo({
-        sessionId: selectedUpload.sessionId,
-        chunkSize: selectedUpload.chunkSize,
-      });
-      setUploadProgress(selectedUpload.uploadProgress);
-    } else {
-      // Reset state if no upload is selected
-      setLastUploadedChunkIndex(-1);
-      setSessionInfo(null);
-      setUploadProgress(0);
-      setUploadStatus('idle');
-    }
-  }, [selectedUpload]);
-
-  // Update parent component with status changes
-  useEffect(() => {
-    console.log('uploadStatus', uploadStatus, 'uploadProgress', uploadProgress);
-
-    if (file && (uploadStatus === 'active' || uploadStatus === 'paused')) {
-      onUploadStatusChange(uploadStatus, {
-        fileName: file.name,
-        fileSize: file.size,
-        sessionId: sessionInfo?.sessionId || '',
-        lastChunkIndex: lastUploadedChunkIndex,
-        chunkSize: sessionInfo?.chunkSize || 0,
-        uploadProgress,
-      });
-    } else if (uploadStatus === 'success') {
-      onUploadStatusChange(uploadStatus);
-    }
-  }, [uploadStatus, uploadProgress]);
-
   const handleSubmit = async (): Promise<void> => {
     if (!file) return;
+
     uploadStoppedRef.current = false;
     setUploadStatus('active');
 
@@ -93,6 +48,7 @@ const ChunkedUploadForm = ({
       }
 
       let currentChunkIndex = lastUploadedChunkIndex + 1;
+      const totalChunks = Math.ceil(file.size / chunkSize);
 
       if (sessionId && chunkSize) {
         for (
@@ -105,18 +61,36 @@ const ChunkedUploadForm = ({
             return;
           }
 
+          // Log progress
+          console.log(
+            `Uploading chunk ${currentChunkIndex + 1}/${totalChunks}`
+          );
+
           await uploadChunk(start, currentChunkIndex, sessionId, chunkSize);
+
+          // Update progress
+          const currentProgress = Math.round((start * 100) / file.size);
+          setUploadProgress(currentProgress);
 
           setLastUploadedChunkIndex(currentChunkIndex);
           currentChunkIndex++;
-          setUploadProgress(Math.round((start * 100) / file.size));
         }
+
+        // Upload complete
         setUploadProgress(100);
       }
+
+      // Complete the upload
       await api.completeUpload(sessionId, file.name);
       setUploadStatus('success');
-      setLastUploadedChunkIndex(-1); // Reset after successful upload
-      setSessionInfo(null); // Clear session info
+
+      // Reset state
+      setTimeout(() => {
+        setFile(null);
+        setLastUploadedChunkIndex(-1);
+        setSessionInfo(null);
+        setUploadProgress(0);
+      }, 1500);
     } catch (error) {
       // Handle upload errors
       console.error('Upload error:', error);
@@ -135,15 +109,14 @@ const ChunkedUploadForm = ({
     chunkSize: number
   ): Promise<void> => {
     if (!file) return;
-    const abortController = new AbortController();
-    setAbortController(abortController);
+    const newAbortController = new AbortController();
+    setAbortController(newAbortController);
     const end = Math.min(start + chunkSize, file.size);
     const chunkToUpload = file.slice(start, end);
 
-    const formData = new FormData();
-    formData.append('chunk', chunkToUpload);
-    formData.append('chunkIndex', chunkIndex.toString());
-    formData.append('sessionId', sessionId);
+    // Update progress for this chunk start
+    const startProgress = Math.round((start * 100) / file.size);
+    setUploadProgress(startProgress);
 
     try {
       await api.uploadChunk(
@@ -151,32 +124,56 @@ const ChunkedUploadForm = ({
         chunkIndex,
         sessionId,
         chunkSize,
-        abortController.signal
+        newAbortController.signal
       );
+
+      // Update progress after chunk completes
+      const endProgress = Math.round((end * 100) / file.size);
+      setUploadProgress(endProgress);
     } catch (error) {
       console.error('Chunk upload failed:', error);
       throw error;
     }
   };
+
   const stopUpload = () => {
     uploadStoppedRef.current = true;
     setUploadStatus('paused');
     if (abortController) {
       abortController.abort();
+      setAbortController(null);
     }
   };
 
   const resumeUpload = () => {
+    uploadStoppedRef.current = false;
+    setUploadStatus('active');
     handleSubmit();
   };
 
+  // Determine what UI to show based on status
+  const showUploadControls =
+    uploadStatus === 'active' || uploadStatus === 'paused';
+
+  // Create an upload object for UploadingControls
+  const uploadData = {
+    id: 1,
+    fileName: file?.name || '',
+    fileSize: file?.size || 0,
+    sessionId: sessionInfo?.sessionId || '',
+    lastChunkIndex: lastUploadedChunkIndex,
+    chunkSize: sessionInfo?.chunkSize || 0,
+    lastModified: Date.now(),
+    uploadProgress,
+    status: uploadStatus,
+  };
+  console.log(file);
+
   return (
     <>
-      {selectedUpload ? (
+      {showUploadControls ? (
         <UploadingControls
-          uploadStatus={uploadStatus}
-          uploadProgress={uploadProgress}
-          selectedUpload={selectedUpload}
+          selectedUpload={uploadData}
           stopUpload={stopUpload}
           resumeUpload={resumeUpload}
         />

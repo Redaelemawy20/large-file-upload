@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import Form from './Form';
+import type { UploadStatus } from '../types';
 
 const SmallFileUploadForm = () => {
-  const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
 
   // Maximum file size - 10MB
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
-  const MAX_FILE_SIZE_FORMATTED = '10MB';
 
   // Handle the file upload
-  const handleUpload = async (file: File): Promise<void> => {
+  const handleUpload = async (): Promise<void> => {
     if (!file) return;
 
-    setUploading(true);
+    setUploadStatus('active');
     setUploadProgress(0);
 
     const formData = new FormData();
@@ -35,9 +36,14 @@ const SmallFileUploadForm = () => {
       await new Promise<void>((resolve, reject) => {
         // Handle response
         xhr.onload = () => {
-          setUploading(false);
-
           if (xhr.status >= 200 && xhr.status < 300) {
+            setUploadStatus('success');
+            setUploadProgress(100);
+            setTimeout(() => {
+              setFile(null);
+              setUploadProgress(0);
+              setUploadStatus('idle');
+            }, 1500);
             resolve();
           } else {
             try {
@@ -51,7 +57,7 @@ const SmallFileUploadForm = () => {
 
         // Handle network errors
         xhr.onerror = () => {
-          setUploading(false);
+          setUploadStatus('error');
           reject(new Error('Network error'));
         };
 
@@ -59,18 +65,27 @@ const SmallFileUploadForm = () => {
       });
     } catch (error) {
       console.error('Upload failed:', error);
-      setUploading(false);
+      setUploadStatus('error');
     }
   };
 
   return (
-    <Form
-      uploading={uploading}
-      uploadProgress={uploadProgress}
-      maxFileSize={MAX_FILE_SIZE}
-      maxFileFormat={MAX_FILE_SIZE_FORMATTED as unknown as number}
-      onUpload={handleUpload}
-    />
+    <div className="max-w-lg mx-auto">
+      <div className="mb-4 text-sm text-gray-600">
+        <p>Use this form to upload files smaller than 10MB.</p>
+      </div>
+
+      <Form
+        uploadProgress={uploadProgress}
+        maxFileSize={MAX_FILE_SIZE}
+        maxFileFormat={MAX_FILE_SIZE}
+        onUpload={handleUpload}
+        uploadStatus={uploadStatus}
+        setUploadStatus={setUploadStatus}
+        file={file}
+        setFile={setFile}
+      />
+    </div>
   );
 };
 
