@@ -71,30 +71,33 @@ export const getSessionId = (req: Request, res: Response) => {
 export const CHUNK_DIR = path.join(UPLOAD_DIR, 'tmp');
 export const uploadChunk = (req: Request, res: Response) => {
   const { sessionId, chunkIndex } = req.body;
-  if (!sessionId || chunkIndex === undefined || !req.file) {
-    return res.status(400).json({ error: 'Missing required data' });
-  }
+  // add small timout to simulate network latency
+  setTimeout(() => {
+    if (!sessionId || chunkIndex === undefined || !req.file) {
+      return res.status(400).json({ error: 'Missing required data' });
+    }
 
-  const session = uploadSessions.get(sessionId);
-  if (!session) {
-    return res.status(404).json({ error: 'Invalid session ID' });
-  }
+    const session = uploadSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Invalid session ID' });
+    }
 
-  const chunkIdx = parseInt(chunkIndex, 10);
-  if (isNaN(chunkIdx)) {
-    return res.status(400).json({ error: 'Invalid chunk index' });
-  }
-  const sessionFolder = path.join(CHUNK_DIR, sessionId);
-  fs.mkdirSync(sessionFolder, { recursive: true });
+    const chunkIdx = parseInt(chunkIndex, 10);
+    if (isNaN(chunkIdx)) {
+      return res.status(400).json({ error: 'Invalid chunk index' });
+    }
+    const sessionFolder = path.join(CHUNK_DIR, sessionId);
+    fs.mkdirSync(sessionFolder, { recursive: true });
 
-  const chunkPath = path.join(sessionFolder, `${chunkIdx}.part`);
-  fs.writeFileSync(chunkPath, req.file.buffer);
-  const receivedChunks = session.receivedChunks;
-  if (!receivedChunks.includes(chunkIdx)) {
-    receivedChunks.push(chunkIdx);
-  }
+    const chunkPath = path.join(sessionFolder, `${chunkIdx}.part`);
+    fs.writeFileSync(chunkPath, req.file.buffer);
+    const receivedChunks = session.receivedChunks;
+    if (!receivedChunks.includes(chunkIdx)) {
+      receivedChunks.push(chunkIdx);
+    }
 
-  res.json({ message: 'Chunk received', chunkIndex: chunkIdx });
+    res.json({ message: 'Chunk received', chunkIndex: chunkIdx });
+  }, 1000); // 1 second delay
 };
 
 export const completeUpload = async (req: Request, res: Response) => {
