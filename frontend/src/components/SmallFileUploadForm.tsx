@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Form from './Form';
 import type { UploadStatus } from '../types';
 
-const SmallFileUploadForm = () => {
+interface SmallFileUploadFormProps {
+  setUploadActive: (active: boolean) => void;
+}
+
+const SmallFileUploadForm = ({ setUploadActive }: SmallFileUploadFormProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
 
   // Maximum file size - 10MB
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+  // Update uploadActive based on status
+  useEffect(() => {
+    setUploadActive(uploadStatus === 'active');
+  }, [uploadStatus, setUploadActive]);
 
   // Handle the file upload
   const handleUpload = async (): Promise<void> => {

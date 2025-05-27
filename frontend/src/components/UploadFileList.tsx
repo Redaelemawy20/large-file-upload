@@ -6,10 +6,13 @@ type UploadType = 'regular' | 'chunked';
 
 const UploadFileList = () => {
   const [uploadType, setUploadType] = useState<UploadType>('regular');
+  const [uploadActive, setUploadActive] = useState(false);
 
   // Toggle between upload types
   const toggleUploadType = () => {
-    setUploadType((prev) => (prev === 'regular' ? 'chunked' : 'regular'));
+    if (!uploadActive) {
+      setUploadType((prev) => (prev === 'regular' ? 'chunked' : 'regular'));
+    }
   };
 
   return (
@@ -25,7 +28,13 @@ const UploadFileList = () => {
               Upload Options
             </h2>
             <div className="flex items-center mb-4">
-              <label className="flex items-center cursor-pointer">
+              <label
+                className={`flex items-center ${
+                  uploadActive
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'cursor-pointer'
+                }`}
+              >
                 <div className="mr-3 text-neutral font-medium">
                   Upload Type:
                 </div>
@@ -35,8 +44,13 @@ const UploadFileList = () => {
                     className="sr-only"
                     checked={uploadType === 'chunked'}
                     onChange={toggleUploadType}
+                    disabled={uploadActive}
                   />
-                  <div className="block bg-neutral/30 w-14 h-8 rounded-full"></div>
+                  <div
+                    className={`block ${
+                      uploadActive ? 'bg-neutral/20' : 'bg-neutral/30'
+                    } w-14 h-8 rounded-full`}
+                  ></div>
                   <div
                     className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition ${
                       uploadType === 'chunked' ? 'transform translate-x-6' : ''
@@ -67,9 +81,9 @@ const UploadFileList = () => {
             </h2>
 
             {uploadType === 'regular' ? (
-              <SmallFileUploadForm />
+              <SmallFileUploadForm setUploadActive={setUploadActive} />
             ) : (
-              <ChunkedUploadForm />
+              <ChunkedUploadForm setUploadActive={setUploadActive} />
             )}
           </div>
         </div>

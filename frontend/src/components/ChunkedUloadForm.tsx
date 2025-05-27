@@ -1,10 +1,14 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Form from './Form';
 import * as api from '../services/api';
 import type { UploadStatus } from '../types';
 import UploadingControls from './UploadingControls';
 
-const ChunkedUploadForm = () => {
+interface ChunkedUploadFormProps {
+  setUploadActive: (active: boolean) => void;
+}
+
+const ChunkedUploadForm = ({ setUploadActive }: ChunkedUploadFormProps) => {
   // Internal state for the component
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -17,6 +21,11 @@ const ChunkedUploadForm = () => {
   } | null>(null);
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
+
+  // Update uploadActive based on status
+  useEffect(() => {
+    setUploadActive(uploadStatus === 'active' || uploadStatus === 'paused');
+  }, [uploadStatus, setUploadActive]);
 
   const handleSubmit = async (): Promise<void> => {
     if (!file) return;
