@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import ChunkedUploadForm from './ChunkedUloadForm';
 import SmallFileUploadForm from './SmallFileUploadForm';
+import type { FileInfo } from '../types';
 
 type UploadType = 'regular' | 'chunked';
 
 const UploadFileList = () => {
   const [uploadType, setUploadType] = useState<UploadType>('regular');
   const [uploadActive, setUploadActive] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [chunkedUploadInfo, setChunkedUploadInfo] = useState<FileInfo | null>(
+    null
+  );
 
   // Toggle between upload types
   const toggleUploadType = () => {
@@ -83,7 +88,13 @@ const UploadFileList = () => {
             {uploadType === 'regular' ? (
               <SmallFileUploadForm setUploadActive={setUploadActive} />
             ) : (
-              <ChunkedUploadForm setUploadActive={setUploadActive} />
+              <ChunkedUploadForm
+                setUploadActive={setUploadActive}
+                savedFile={file}
+                setSavedFile={setFile}
+                savedUploadInfo={chunkedUploadInfo}
+                setSavedUploadInfo={setChunkedUploadInfo}
+              />
             )}
           </div>
         </div>

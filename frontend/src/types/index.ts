@@ -3,12 +3,15 @@ export interface IncompleteUpload {
   fileName: string;
   fileSize: number;
   sessionId: string;
-  lastChunkIndex: number;
+  chunkIndex: number;
   chunkSize: number;
   lastModified: number;
   uploadProgress: number;
   status: UploadStatus;
 }
-export type FileInfo = Omit<IncompleteUpload, 'id' | 'lastModified' | 'status'>;
+export type FileInfo = Omit<
+  IncompleteUpload,
+  'id' | 'lastModified' | 'fileName' | 'fileSize'
+>;
 
 export type UploadStatus = 'idle' | 'active' | 'success' | 'error' | 'paused';

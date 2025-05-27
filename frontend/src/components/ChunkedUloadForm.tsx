@@ -1,31 +1,79 @@
 import { useRef, useState, useEffect } from 'react';
 import Form from './Form';
 import * as api from '../services/api';
-import type { UploadStatus } from '../types';
+import type { FileInfo, UploadStatus } from '../types';
 import UploadingControls from './UploadingControls';
 
 interface ChunkedUploadFormProps {
   setUploadActive: (active: boolean) => void;
+  savedFile: File | null;
+  setSavedFile: (file: File | null) => void;
+  savedUploadInfo: FileInfo | null;
+  setSavedUploadInfo: (info: FileInfo | null) => void;
 }
 
-const ChunkedUploadForm = ({ setUploadActive }: ChunkedUploadFormProps) => {
+const ChunkedUploadForm = ({
+  setUploadActive,
+  savedFile,
+  setSavedFile,
+  savedUploadInfo,
+  setSavedUploadInfo,
+}: ChunkedUploadFormProps) => {
   // Internal state for the component
-  const [file, setFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+  const [file, setFile] = useState<File | null>(savedFile);
+  const [uploadProgress, setUploadProgress] = useState(
+    savedUploadInfo?.uploadProgress || 0
+  );
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>(
+    (savedUploadInfo?.status as UploadStatus) || 'idle'
+  );
   const uploadStoppedRef = useRef(false);
-  const [lastUploadedChunkIndex, setLastUploadedChunkIndex] = useState(-1);
+  const [lastUploadedChunkIndex, setLastUploadedChunkIndex] = useState(
+    savedUploadInfo?.chunkIndex || -1
+  );
   const [sessionInfo, setSessionInfo] = useState<{
     sessionId: string;
     chunkSize: number;
-  } | null>(null);
+  } | null>(
+    savedUploadInfo
+      ? {
+          sessionId: savedUploadInfo.sessionId,
+          chunkSize: savedUploadInfo.chunkSize,
+        }
+      : null
+  );
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
 
   // Update uploadActive based on status
   useEffect(() => {
-    setUploadActive(uploadStatus === 'active' || uploadStatus === 'paused');
+    setUploadActive(uploadStatus === 'active');
   }, [uploadStatus, setUploadActive]);
+
+  // Sync local state with parent state
+  useEffect(() => {
+    if (file !== savedFile) {
+      setSavedFile(file);
+    }
+  }, [file, savedFile, setSavedFile]);
+
+  useEffect(() => {
+    if (sessionInfo && lastUploadedChunkIndex >= 0) {
+      setSavedUploadInfo({
+        sessionId: sessionInfo.sessionId,
+        chunkSize: sessionInfo.chunkSize,
+        chunkIndex: lastUploadedChunkIndex,
+        uploadProgress,
+        status: uploadStatus,
+      });
+    }
+  }, [
+    sessionInfo,
+    lastUploadedChunkIndex,
+    uploadProgress,
+    uploadStatus,
+    setSavedUploadInfo,
+  ]);
 
   const handleSubmit = async (): Promise<void> => {
     if (!file) return;
@@ -101,6 +149,7 @@ const ChunkedUploadForm = ({ setUploadActive }: ChunkedUploadFormProps) => {
         setLastUploadedChunkIndex(-1);
         setSessionInfo(null);
         setUploadProgress(0);
+        setSavedUploadInfo(null);
       }, 1500);
     } catch (error) {
       // Handle upload errors
@@ -172,11 +221,17 @@ const ChunkedUploadForm = ({ setUploadActive }: ChunkedUploadFormProps) => {
     fileName: file?.name || '',
     fileSize: file?.size || 0,
     sessionId: sessionInfo?.sessionId || '',
-    lastChunkIndex: lastUploadedChunkIndex,
+    chunkIndex: lastUploadedChunkIndex,
     chunkSize: sessionInfo?.chunkSize || 0,
     lastModified: Date.now(),
     uploadProgress,
     status: uploadStatus,
+  };
+
+  // Custom file setter that updates both local and parent state
+  const handleFileChange = (newFile: File | null) => {
+    setFile(newFile);
+    setSavedFile(newFile);
   };
 
   return (
@@ -196,7 +251,7 @@ const ChunkedUploadForm = ({ setUploadActive }: ChunkedUploadFormProps) => {
           uploadStatus={uploadStatus}
           setUploadStatus={setUploadStatus}
           file={file}
-          setFile={setFile}
+          setFile={handleFileChange}
         />
       )}
     </>
