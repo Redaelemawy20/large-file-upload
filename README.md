@@ -26,7 +26,7 @@ npm install
 To run both backend and frontend in development mode:
 
 ```bash
-npm run dev
+npm start
 ```
 
 This will start:
@@ -40,7 +40,7 @@ You can also run backend and frontend separately:
 
 ```bash
 # Development mode
-npm run dev:backend    # Run backend in development mode
-npm run dev:frontend   # Run frontend in development mode
+npm run start:backend    # Run backend in development mode
+npm run start:frontend   # Run frontend in development mode
 
 ```
